@@ -68,10 +68,10 @@ export function parseCookies(request) {
 
 /**
  * Build a Set-Cookie header value.
- * Note: do NOT pass httpOnly for session/admin tokens —
- * the frontend JS needs to read them to extract user info.
+ * Both session and admin tokens are httpOnly — the frontend
+ * calls /api/me or /api/admin/me to read user info instead.
  */
-export function cookieHeader(name, value, { maxAge, secure, httpOnly, sameSite = 'Lax', path = '/' } = {}) {
+export function cookieHeader(name, value, { maxAge, secure, httpOnly = false, sameSite = 'Lax', path = '/' } = {}) {
     const parts = [`${name}=${value}`, `Path=${path}`, `SameSite=${sameSite}`];
     if (maxAge   !== undefined) parts.push(`Max-Age=${maxAge}`);
     if (secure)   parts.push('Secure');
@@ -94,19 +94,53 @@ export function redirect(url, extraHeaders = {}) {
     });
 }
 
-// ── TIER LOGIC ────────────────────────────────────────────────────────────────
-export const TIER_RANK = { tyro: 0, initiate: 1, adept: 2, patron: 2 };
+// ── TIER SYSTEM ───────────────────────────────────────────────────────────────
+//
+// Tiers are purely supportive — all paid members get the same curriculum access.
+// Tier rank is used for content gating (tyro = free articles only; zelator+ = all curriculum).
+//
+//   Tyro     — free follower      (rank 0)
+//   Zelator  — $5/mo  supporter   (rank 1)
+//   Initiate — $10/mo supporter   (rank 2)
+//   Adept    — $15/mo supporter   (rank 3)
+//   Scholar  — $33/mo supporter   (rank 4)
+//
+export const TIER_RANK = {
+    tyro:     0,
+    zelator:  1,
+    initiate: 2,
+    adept:    3,
+    scholar:  4,
+};
+
+export const TIER_LABELS = {
+    tyro:     'Tyro',
+    zelator:  'Zelator',
+    initiate: 'Initiate',
+    adept:    'Adept',
+    scholar:  'Scholar',
+};
 
 export function getAdminIds(env) {
     return (env.PATREON_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 }
 
+/**
+ * Map Patreon pledge amount (cents) → internal tier.
+ * Admins always receive adept access regardless of pledge.
+ */
 export function getTier(amountCents, userId, env) {
     if (getAdminIds(env).includes(userId)) return 'adept';
-    if (amountCents >= 3300) return 'patron';
+    if (amountCents >= 3300) return 'scholar';
     if (amountCents >= 1500) return 'adept';
-    if (amountCents >= 500)  return 'initiate';
+    if (amountCents >= 1000) return 'initiate';
+    if (amountCents >= 500)  return 'zelator';
     return 'tyro';
+}
+
+/** True for any paying member — unlocks the full curriculum. */
+export function isPaidMember(tier) {
+    return (TIER_RANK[tier] ?? 0) >= TIER_RANK.zelator;
 }
 
 // ── AUTH GUARDS ───────────────────────────────────────────────────────────────
@@ -147,11 +181,10 @@ export function extractExcerpt(content, maxLen = 180) {
 }
 
 // ── KV STORE WRAPPER ──────────────────────────────────────────────────────────
-// Wraps Cloudflare KV to match the interface used throughout the codebase.
 export function kvStore(kv) {
     return {
         async get(key) {
-            return kv.get(key, { type: 'json' }); // null if not found
+            return kv.get(key, { type: 'json' });
         },
         async setJSON(key, value) {
             await kv.put(key, JSON.stringify(value));

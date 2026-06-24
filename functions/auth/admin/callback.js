@@ -28,17 +28,28 @@ export async function onRequestGet({ request, env }) {
         );
         const identity = await identityRes.json();
         const user     = identity.data;
-        if (!user?.id)                        return redirect('/admin?error=identity_failed');
+        if (!user?.id)                           return redirect('/admin?error=identity_failed');
         if (!getAdminIds(env).includes(user.id)) return redirect('/admin?error=unauthorized');
 
         const token = await signJWT(
-            { userId: user.id, email: user.attributes?.email, name: user.attributes?.full_name, role: 'admin' },
+            {
+                userId: user.id,
+                email:  user.attributes?.email,
+                name:   user.attributes?.full_name,
+                role:   'admin',
+            },
             env.JWT_ADMIN_SECRET,
             28800 // 8 hours
         );
 
         return redirect('/admin', {
-            'Set-Cookie': cookieHeader('ttao_admin', token, { maxAge: 28800, secure: true }),
+            // httpOnly: admin.html calls /api/admin/me instead of reading the cookie.
+            'Set-Cookie': cookieHeader('ttao_admin', token, {
+                maxAge:   28800,
+                secure:   true,
+                httpOnly: true,
+                sameSite: 'Strict', // stricter for admin
+            }),
         });
     } catch (err) {
         console.error('Admin callback error:', err);

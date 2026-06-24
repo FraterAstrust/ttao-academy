@@ -2,6 +2,8 @@ name                   = "ttao-academy"
 pages_build_output_dir = "."
 compatibility_date     = "2025-01-01"
 
+# ── EXISTING KV NAMESPACES ────────────────────────────────────────────────────
+
 [[kv_namespaces]]
 binding = "ARTICLES_KV"
 id      = "57042f14d2c349adb4de84ff6f508f6c"
@@ -9,3 +11,9 @@ id      = "57042f14d2c349adb4de84ff6f508f6c"
 [[kv_namespaces]]
 binding = "STUDENTS_KV"
 id      = "0e1b069217264bfdb511c275bdbaaf41"
+
+# ── RATE LIMITING KV ──────────────────────────────────────────────────────────
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id      = "7a3287f957394c9e8731264b1aeb1183"

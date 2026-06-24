@@ -56,15 +56,26 @@ export async function onRequestGet({ request, env }) {
             });
         } catch (e) { console.error('Student upsert:', e); }
 
-        // Sign session JWT
+        // Sign session JWT (7 days)
         const token = await signJWT(
-            { userId: user.id, email: user.attributes?.email, name: user.attributes?.full_name, tier },
+            {
+                userId: user.id,
+                email:  user.attributes?.email,
+                name:   user.attributes?.full_name,
+                tier,
+            },
             env.JWT_SECRET,
-            604800 // 7 days
+            604800
         );
 
         return redirect('/dashboard', {
-            'Set-Cookie': cookieHeader('ttao_session', token, { maxAge: 604800, secure: true }),
+            // httpOnly: JS cannot touch this cookie — /api/me exposes what the UI needs.
+            'Set-Cookie': cookieHeader('ttao_session', token, {
+                maxAge:   604800,
+                secure:   true,
+                httpOnly: true,
+                sameSite: 'Lax',
+            }),
         });
     } catch (err) {
         console.error('Patreon callback error:', err);
