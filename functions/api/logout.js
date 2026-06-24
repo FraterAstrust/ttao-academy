@@ -4,7 +4,7 @@
  * The browser cannot clear httpOnly cookies via document.cookie,
  * so we need a server endpoint to do it.
  */
-import { json, cookieHeader } from '../../../zipped_files/ttao-final/functions/_shared/utils.js';
+import { json, cookieHeader } from '../_shared/utils.js';
 
 export async function onRequestPost() {
     return json({ ok: true }, 200, {
