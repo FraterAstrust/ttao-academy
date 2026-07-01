@@ -1,7 +1,7 @@
 /**
  * GET /api/admin/me
- * Returns the current admin's identity.
- * Used by admin.html to confirm admin status without reading a JS-accessible cookie.
+ * Returns admin identity. Used by admin.html instead of reading the
+ * httpOnly cookie directly from JS.
  */
 import { requireAdmin, json } from '../../_shared/utils.js';
 

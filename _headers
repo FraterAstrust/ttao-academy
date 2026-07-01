@@ -7,11 +7,21 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Content-Security-Policy: default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; form-action 'self';
 
+# Auth flow pages — never cache
+/login
+  Cache-Control: no-store
+
+/setup
+  Cache-Control: no-store
+
+# Auth endpoints — never cache
 /auth/*
   Cache-Control: no-store
 
+# API endpoints — never cache
 /api/*
   Cache-Control: no-store, no-cache, must-revalidate
 
+# Static JS — short cache, revalidate
 /js/*
   Cache-Control: public, max-age=3600, must-revalidate

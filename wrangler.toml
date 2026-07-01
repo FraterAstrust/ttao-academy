@@ -9,11 +9,26 @@ binding = "ARTICLES_KV"
 id      = "57042f14d2c349adb4de84ff6f508f6c"
 
 [[kv_namespaces]]
-binding = "STUDENTS_KV"
-id      = "0e1b069217264bfdb511c275bdbaaf41"
-
-# ── RATE LIMITING KV ──────────────────────────────────────────────────────────
-
-[[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
 id      = "7a3287f957394c9e8731264b1aeb1183"
+
+# ── D1 DATABASE ───────────────────────────────────────────────────────────────
+# 1. Create:  npx wrangler d1 create ttao-academy
+# 2. Replace the database_id below with the returned ID.
+# 3. Apply schema: npx wrangler d1 execute ttao-academy --file=schema.sql
+# 4. Add the binding in Cloudflare Pages dashboard:
+#    Settings → Functions → D1 database bindings → DB
+
+[[d1_databases]]
+binding       = "DB"
+database_name = "ttao-academy"
+database_id   = "6fe859f4-37ee-4f82-83df-d445d1f0791c"
+
+# ── R2 BUCKET (forum attachments — Phase 2) ───────────────────────────────────
+# 1. Create:  npx wrangler r2 bucket create ttao-attachments
+# 2. Add binding in Cloudflare Pages dashboard:
+#    Settings → Functions → R2 bucket bindings → BUCKET
+
+[[r2_buckets]]
+binding     = "BUCKET"
+bucket_name = "ttao-attachments"

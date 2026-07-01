@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — The Inner Academy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="bg-geometry" aria-hidden="true">
+        <svg class="geo-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="250" cy="250" r="220" fill="none" stroke="rgba(212,175,55,0.06)" stroke-width="1"/>
+            <circle cx="250" cy="250" r="160" fill="none" stroke="rgba(212,175,55,0.05)" stroke-width="1"/>
+            <polygon points="250,40 450,370 50,370"  fill="none" stroke="rgba(212,175,55,0.07)" stroke-width="1"/>
+            <polygon points="250,460 50,130 450,130" fill="none" stroke="rgba(0,209,255,0.04)"  stroke-width="1"/>
+        </svg>
+    </div>
+
+    <main class="sanctum">
+
+        <div class="emblem" aria-hidden="true">
+            <svg width="48" height="48" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="32" cy="32" r="30" fill="none" stroke="rgba(212,175,55,0.5)"  stroke-width="0.8"/>
+                <polygon points="32,8 56,48 8,48"  fill="none" stroke="rgba(212,175,55,0.6)"  stroke-width="0.8"/>
+                <polygon points="32,56 8,16 56,16" fill="none" stroke="rgba(0,209,255,0.35)" stroke-width="0.8"/>
+                <circle cx="32" cy="32" r="3" fill="rgba(212,175,55,0.5)"/>
+            </svg>
+        </div>
+
+        <p class="archive-label">The Inner Academy</p>
+        <h1 class="title">Sign In</h1>
+        <div class="divider"></div>
+
+        <div id="auth-error" class="auth-error" style="display:none"></div>
+
+        <div class="auth-form">
+            <div class="form-field">
+                <label class="form-label" for="identifier">Username or Email</label>
+                <input
+                    class="form-input"
+                    type="text"
+                    id="identifier"
+                    name="identifier"
+                    autocomplete="username"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    required>
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="password">Password</label>
+                <input
+                    class="form-input"
+                    type="password"
+                    id="password"
+                    name="password"
+                    autocomplete="current-password"
+                    required>
+            </div>
+
+            <button class="btn btn-primary" id="login-btn" type="button">
+                <span class="btn-icon">⚷</span>
+                Enter the Sanctum
+            </button>
+        </div>
+
+        <div class="auth-divider">
+            <span>or</span>
+        </div>
+
+        <div class="gate-actions" style="max-width:300px">
+            <a href="/auth/patreon?state=reset" class="btn btn-outline">
+                Forgot password? Reset via Patreon
+            </a>
+            <a href="/" class="btn btn-ghost">← Back</a>
+        </div>
+
+    </main>
+
+    <footer class="page-footer">
+        <span>© 2026 The Temple of the Ternary Alchemical Order</span>
+    </footer>
+
+    <script>
+    (function() {
+        var identifierEl = document.getElementById('identifier');
+        var passwordEl   = document.getElementById('password');
+        var loginBtn     = document.getElementById('login-btn');
+        var errorEl      = document.getElementById('auth-error');
+
+        function showError(msg) {
+            errorEl.textContent = msg;
+            errorEl.style.display = 'block';
+        }
+        function clearError() {
+            errorEl.style.display = 'none';
+        }
+
+        async function doLogin() {
+            clearError();
+            var identifier = identifierEl.value.trim();
+            var password   = passwordEl.value;
+
+            if (!identifier || !password) {
+                showError('Please enter your username (or email) and password.');
+                return;
+            }
+
+            loginBtn.disabled    = true;
+            loginBtn.textContent = 'Entering…';
+
+            try {
+                var res  = await fetch('/api/auth/login', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ identifier: identifier, password: password }),
+                });
+                var data = await res.json();
+
+                if (res.ok && data.ok) {
+                    window.location.href = '/dashboard';
+                } else {
+                    showError(data.error || 'Sign in failed. Please try again.');
+                    loginBtn.disabled    = false;
+                    loginBtn.innerHTML   = '<span class="btn-icon">⚷</span> Enter the Sanctum';
+                    passwordEl.value     = '';
+                    passwordEl.focus();
+                }
+            } catch (e) {
+                showError('Network error. Please try again.');
+                loginBtn.disabled  = false;
+                loginBtn.innerHTML = '<span class="btn-icon">⚷</span> Enter the Sanctum';
+            }
+        }
+
+        loginBtn.addEventListener('click', doLogin);
+
+        // Allow Enter key from either field
+        [identifierEl, passwordEl].forEach(function(el) {
+            el.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') doLogin();
+            });
+        });
+
+        // Focus username on load
+        identifierEl.focus();
+    })();
+    </script>
+
+</body>
+</html>

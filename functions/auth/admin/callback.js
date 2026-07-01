@@ -1,4 +1,9 @@
-import { signJWT, cookieHeader, redirect, getAdminIds } from '../../_shared/utils.js';
+/**
+ * GET /auth/admin/callback
+ * Completes admin Patreon OAuth. Admin identity is verified against
+ * PATREON_ADMIN_IDS — no D1 user record required for admin access.
+ */
+import { signJWT, getAdminIds, cookieHeader, redirect } from '../../_shared/utils.js';
 
 export async function onRequestGet({ request, env }) {
     const url   = new URL(request.url);
@@ -28,6 +33,7 @@ export async function onRequestGet({ request, env }) {
         );
         const identity = await identityRes.json();
         const user     = identity.data;
+
         if (!user?.id)                           return redirect('/admin?error=identity_failed');
         if (!getAdminIds(env).includes(user.id)) return redirect('/admin?error=unauthorized');
 
@@ -39,16 +45,15 @@ export async function onRequestGet({ request, env }) {
                 role:   'admin',
             },
             env.JWT_ADMIN_SECRET,
-            28800 // 8 hours
+            8 * 60 * 60 // 8 hours
         );
 
         return redirect('/admin', {
-            // httpOnly: admin.html calls /api/admin/me instead of reading the cookie.
             'Set-Cookie': cookieHeader('ttao_admin', token, {
-                maxAge:   28800,
+                maxAge:   8 * 60 * 60,
                 secure:   true,
                 httpOnly: true,
-                sameSite: 'Strict', // stricter for admin
+                sameSite: 'Strict',
             }),
         });
     } catch (err) {

@@ -1,3 +1,7 @@
+/**
+ * GET /auth/admin
+ * Initiates Patreon OAuth for admin login.
+ */
 import { redirect } from '../_shared/utils.js';
 
 export async function onRequestGet({ env }) {

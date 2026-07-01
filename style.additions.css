@@ -1,0 +1,131 @@
+/* ── AUTH FORM ADDITIONS ──────────────────────────────────────────────────────
+   Append these rules to the existing style.css for the inner academy gate.
+   They extend the sanctum aesthetic to the login and setup pages.           */
+
+/* Error banner */
+.auth-error {
+    background: rgba(192, 57, 43, 0.12);
+    border: 1px solid rgba(192, 57, 43, 0.3);
+    border-radius: 3px;
+    color: #e57368;
+    font-size: 0.88rem;
+    padding: 0.65rem 1rem;
+    margin-bottom: 1.2rem;
+    max-width: 320px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* Form container */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 1.4rem;
+}
+
+/* Individual field */
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    text-align: left;
+}
+
+.form-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-input {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-cyan);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'EB Garamond', serif;
+    font-size: 1rem;
+    padding: 0.6rem 0.9rem;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    width: 100%;
+}
+
+.form-input:focus {
+    border-color: rgba(212, 175, 55, 0.4);
+    background: rgba(212, 175, 55, 0.03);
+}
+
+.form-input::placeholder {
+    color: var(--text);
+    opacity: 0.3;
+}
+
+.form-hint {
+    font-size: 0.8rem;
+    opacity: 0.5;
+    line-height: 1.5;
+}
+
+.form-hint code {
+    font-family: 'Courier New', monospace;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 0.05rem 0.25rem;
+    border-radius: 2px;
+    font-size: 0.78rem;
+}
+
+/* Username availability indicator */
+.username-status {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    opacity: 0.8;
+}
+.username-status.available { color: #5cb85c; }
+.username-status.taken     { color: #e57368; }
+
+/* "or" divider between sign-in options */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    max-width: 320px;
+    width: 100%;
+    margin: 0.2rem 0 1rem;
+    color: var(--gold-dim);
+    opacity: 0.5;
+    font-size: 0.78rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+/* Ghost button (subtle, for back links) */
+.btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: none;
+    font-size: 0.7rem;
+    opacity: 0.6;
+    text-decoration: none;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 0.5rem;
+    transition: opacity 0.2s;
+    text-align: center;
+    display: block;
+}
+.btn-ghost:hover { opacity: 1; }

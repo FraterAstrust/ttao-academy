@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Your Account — The Inner Academy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="bg-geometry" aria-hidden="true">
+        <svg class="geo-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="250" cy="250" r="220" fill="none" stroke="rgba(212,175,55,0.06)" stroke-width="1"/>
+            <circle cx="250" cy="250" r="160" fill="none" stroke="rgba(212,175,55,0.05)" stroke-width="1"/>
+            <polygon points="250,40 450,370 50,370"  fill="none" stroke="rgba(212,175,55,0.07)" stroke-width="1"/>
+            <polygon points="250,460 50,130 450,130" fill="none" stroke="rgba(0,209,255,0.04)"  stroke-width="1"/>
+        </svg>
+    </div>
+
+    <main class="sanctum" style="max-width:480px">
+
+        <div class="emblem" aria-hidden="true">
+            <svg width="48" height="48" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="32" cy="32" r="30" fill="none" stroke="rgba(212,175,55,0.5)"  stroke-width="0.8"/>
+                <polygon points="32,8 56,48 8,48"  fill="none" stroke="rgba(212,175,55,0.6)"  stroke-width="0.8"/>
+                <polygon points="32,56 8,16 56,16" fill="none" stroke="rgba(0,209,255,0.35)" stroke-width="0.8"/>
+                <circle cx="32" cy="32" r="3" fill="rgba(212,175,55,0.5)"/>
+            </svg>
+        </div>
+
+        <p class="archive-label">The Inner Academy</p>
+        <h1 class="title" id="page-title">Create Your Account</h1>
+        <div class="divider"></div>
+
+        <p class="body-text" id="page-lead" style="margin-bottom:1.6rem">
+            Choose the name you will carry within the Order.
+        </p>
+
+        <div id="auth-error" class="auth-error" style="display:none"></div>
+
+        <div class="auth-form" id="setup-form">
+
+            <!-- Shown during load, replaced with real name from Patreon -->
+            <div class="form-field" id="identity-row" style="display:none">
+                <div class="form-hint" id="identity-display"></div>
+            </div>
+
+            <!-- Username (hidden in reset mode) -->
+            <div class="form-field" id="username-field">
+                <label class="form-label" for="username">
+                    Username
+                    <span id="username-status" class="username-status"></span>
+                </label>
+                <input
+                    class="form-input"
+                    type="text"
+                    id="username"
+                    name="username"
+                    autocomplete="username"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    minlength="3"
+                    maxlength="30"
+                    placeholder="frater.alchemicus">
+                <div class="form-hint">
+                    3–30 characters. Letters, numbers, <code>.</code> <code>_</code> <code>-</code> allowed.
+                    Must start and end with a letter or number.
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="password">Password</label>
+                <input
+                    class="form-input"
+                    type="password"
+                    id="password"
+                    name="password"
+                    autocomplete="new-password"
+                    minlength="8"
+                    maxlength="128">
+                <div class="form-hint">Minimum 8 characters.</div>
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="confirm-password">Confirm Password</label>
+                <input
+                    class="form-input"
+                    type="password"
+                    id="confirm-password"
+                    name="confirmPassword"
+                    autocomplete="new-password"
+                    minlength="8"
+                    maxlength="128">
+            </div>
+
+            <button class="btn btn-primary" id="setup-btn" type="button">
+                Enter the Order
+            </button>
+
+        </div>
+
+        <!-- Shown if setup cookie is missing -->
+        <div id="expired-notice" class="notice" style="display:none">
+            <p>
+                Your setup session has expired or is missing.<br>
+                <a href="/auth/patreon" style="color:var(--gold)">Authenticate via Patreon</a> to begin again.
+            </p>
+        </div>
+
+    </main>
+
+    <footer class="page-footer">
+        <span>© 2026 The Temple of the Ternary Alchemical Order</span>
+    </footer>
+
+    <script>
+    (function() {
+        var isReset      = new URLSearchParams(window.location.search).has('reset');
+        var usernameEl   = document.getElementById('username');
+        var passwordEl   = document.getElementById('password');
+        var confirmEl    = document.getElementById('confirm-password');
+        var setupBtn     = document.getElementById('setup-btn');
+        var errorEl      = document.getElementById('auth-error');
+        var statusEl     = document.getElementById('username-status');
+        var usernameField = document.getElementById('username-field');
+
+        var checkTimer   = null;
+        var usernameOk   = false;
+
+        function showError(msg) {
+            errorEl.textContent = msg;
+            errorEl.style.display = 'block';
+        }
+        function clearError() { errorEl.style.display = 'none'; }
+
+        // ── Load setup info ─────────────────────────────────────────────────
+        fetch('/api/auth/setup-info')
+            .then(function(r) {
+                if (r.status === 401) {
+                    document.getElementById('setup-form').style.display    = 'none';
+                    document.getElementById('expired-notice').style.display = 'block';
+                    return null;
+                }
+                return r.json();
+            })
+            .then(function(info) {
+                if (!info) return;
+
+                // Show Patreon identity above the form
+                var row = document.getElementById('identity-row');
+                var disp = document.getElementById('identity-display');
+                disp.innerHTML = 'Patreon account: <strong style="color:var(--text-bright)">' +
+                    info.email + '</strong>';
+                row.style.display = 'block';
+
+                if (info.isReset) {
+                    // Password-reset mode
+                    document.getElementById('page-title').textContent = 'Reset Password';
+                    document.getElementById('page-lead').textContent  =
+                        'Choose a new password for your account.';
+                    setupBtn.textContent = 'Update Password';
+                    usernameField.style.display = 'none';
+                    usernameOk = true; // not needed for reset
+                    passwordEl.focus();
+                } else {
+                    usernameEl.focus();
+                }
+            });
+
+        // ── Username availability check (debounced) ──────────────────────────
+        usernameEl.addEventListener('input', function() {
+            clearTimeout(checkTimer);
+            statusEl.textContent = '';
+            statusEl.className   = 'username-status';
+            usernameOk = false;
+
+            var val = usernameEl.value.trim();
+            if (!val || val.length < 3) return;
+
+            checkTimer = setTimeout(function() {
+                statusEl.textContent = '…';
+                fetch('/api/auth/check-username?username=' + encodeURIComponent(val))
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.error) {
+                            statusEl.textContent = data.error;
+                            statusEl.className   = 'username-status taken';
+                            usernameOk = false;
+                        } else if (data.available) {
+                            statusEl.textContent = '✓ available';
+                            statusEl.className   = 'username-status available';
+                            usernameOk = true;
+                        } else {
+                            statusEl.textContent = '✗ taken';
+                            statusEl.className   = 'username-status taken';
+                            usernameOk = false;
+                        }
+                    })
+                    .catch(function() { statusEl.textContent = ''; });
+            }, 400);
+        });
+
+        // ── Submit ───────────────────────────────────────────────────────────
+        async function doSetup() {
+            clearError();
+
+            var username        = usernameEl.value.trim();
+            var password        = passwordEl.value;
+            var confirmPassword = confirmEl.value;
+
+            if (!isReset && !username) { showError('Please choose a username.'); return; }
+            if (!isReset && !usernameOk) { showError('Please choose a valid, available username.'); return; }
+            if (!password) { showError('Please enter a password.'); return; }
+            if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
+            if (password !== confirmPassword) { showError('Passwords do not match.'); return; }
+
+            setupBtn.disabled    = true;
+            setupBtn.textContent = 'Setting up…';
+
+            try {
+                var res  = await fetch('/api/auth/complete-setup', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({
+                        username:        username,
+                        password:        password,
+                        confirmPassword: confirmPassword,
+                    }),
+                });
+                var data = await res.json();
+
+                if (res.ok && data.ok) {
+                    window.location.href = '/dashboard';
+                } else {
+                    showError(data.error || 'Setup failed. Please try again.');
+                    setupBtn.disabled    = false;
+                    setupBtn.textContent = isReset ? 'Update Password' : 'Enter the Order';
+                }
+            } catch (e) {
+                showError('Network error. Please try again.');
+                setupBtn.disabled    = false;
+                setupBtn.textContent = isReset ? 'Update Password' : 'Enter the Order';
+            }
+        }
+
+        setupBtn.addEventListener('click', doSetup);
+        [usernameEl, passwordEl, confirmEl].forEach(function(el) {
+            el.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') doSetup();
+            });
+        });
+    })();
+    </script>
+
+</body>
+</html>
