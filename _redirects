@@ -1,7 +1,0 @@
-# Cloudflare Pages _redirects
-# Status 200 = rewrite (serve file at original URL, no browser redirect)
-
-/login      /login.html      200
-/setup      /setup.html      200
-/dashboard  /dashboard.html  200
-/admin      /admin.html      200
