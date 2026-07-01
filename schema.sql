@@ -1,8 +1,8 @@
 -- TTAO Academy — D1 schema
 -- Run: npx wrangler d1 execute ttao-academy --file=schema.sql
 
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
+-- PRAGMA journal_mode = WAL;
+-- PRAGMA foreign_keys = ON;
 
 -- ── USERS ─────────────────────────────────────────────────────────────────────
 
