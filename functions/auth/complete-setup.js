@@ -12,7 +12,7 @@ import {
     verifySetupJWT, validateUsername, hashPassword,
     signJWT, sessionCookie, clearSetupCookie,
     json, SESSION_DURATION,
-} from '../../_shared/utils.js';
+} from '../_shared/utils.js';
 
 export async function onRequestPost({ request, env }) {
     const setup = await verifySetupJWT(request, env);
