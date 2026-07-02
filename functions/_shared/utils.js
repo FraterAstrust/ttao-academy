@@ -99,8 +99,8 @@ const RESERVED_USERNAMES = new Set([
 export function validateUsername(u) {
     if (!u || u.length < 3)  return 'Username must be at least 3 characters.';
     if (u.length > 30)       return 'Username must be 30 characters or fewer.';
-    if (!/^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$/.test(u))
-        return 'Must start and end with a letter or number. Allowed characters: A–Z 0–9 . _ -';
+    if (!/^[A-Za-z0-9](?:[A-Za-z0-9 ._-]*[A-Za-z0-9])?$/.test(u))
+        return 'Must start and end with a letter or number. Allowed characters: letters, numbers, spaces, dot, underscore, dash.';
     if (/[._-]{2}/.test(u)) return 'No consecutive . _ - characters.';
     if (RESERVED_USERNAMES.has(u.toLowerCase())) return 'That username is reserved.';
     return null;
