@@ -2,8 +2,8 @@
  * POST /api/auth/complete-setup
  * Body: { username, password, confirmPassword }
  *
- * For new users:  sets username + password, completes registration.
- * For reset flow: updates password only (username already set).
+ * For new users: sets username + password, completes registration.
+ * Username is the same value users later log in with.
  *
  * On success: issues full session JWT, clears setup cookie → { ok: true }
  * The client then redirects to /dashboard.
@@ -61,14 +61,14 @@ export async function onRequestPost({ request, env }) {
                 .run();
         } else {
             await env.DB
-                .prepare('UPDATE users SET username = ?, password_hash = ?, display_name = ?, last_seen = ? WHERE id = ?')
-                .bind(username, hash, setup.name || username, now, setup.existingUserId)
+                .prepare('UPDATE users SET username = ?, password_hash = ?, last_seen = ? WHERE id = ?')
+                .bind(username, hash, now, setup.existingUserId)
                 .run();
         }
 
         // ── Fetch final user row for JWT ──────────────────────────────────────────
         const user = await env.DB
-            .prepare('SELECT id, username, tier, display_name FROM users WHERE id = ?')
+            .prepare('SELECT id, username, tier FROM users WHERE id = ?')
             .bind(setup.existingUserId)
             .first();
 
@@ -81,7 +81,7 @@ export async function onRequestPost({ request, env }) {
             patreonId: setup.patreonId,
             email:     setup.email,
             username:  user.username,
-            name:      user.display_name,
+            name:      user.username,
             tier:      user.tier,
         }, env.JWT_SECRET, SESSION_DURATION);
 

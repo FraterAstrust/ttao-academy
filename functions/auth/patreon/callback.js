@@ -54,7 +54,7 @@ export async function onRequestGet({ request, env }) {
         const amountCents = active?.attributes.currently_entitled_amount_cents || 0;
         const tier        = getTier(amountCents, pUser.id, env);
         const email       = pUser.attributes?.email  || '';
-        const name        = pUser.attributes?.full_name || '';
+        const patreonName = (pUser.attributes?.full_name || '').trim() || email.split('@')[0];
 
         // 3. Look up existing user in D1
         const existing = await env.DB
@@ -67,7 +67,7 @@ export async function onRequestGet({ request, env }) {
             const setupToken = await signSetupJWT({
                 patreonId:      pUser.id,
                 email,
-                name,
+                name:           patreonName,
                 tier:           existing.tier_override ? existing.tier : tier,
                 isReset:        true,
                 existingUserId: existing.id,
@@ -97,7 +97,7 @@ export async function onRequestGet({ request, env }) {
                 patreonId: pUser.id,
                 email,
                 username: existing.username,
-                name,
+                name:     existing.username,
                 tier:     activeTier,
             }, env.JWT_SECRET, SESSION_DURATION);
 
@@ -106,19 +106,19 @@ export async function onRequestGet({ request, env }) {
 
         // ── New user or incomplete registration: go to setup ─────────────────
         if (!existing) {
-            // Create a stub user row so the username uniqueness check works
+            // Create a stub user row so the username can be set during setup
             const newId = crypto.randomUUID();
             const now   = new Date().toISOString();
             await env.DB
-                .prepare(`INSERT INTO users (id, patreon_id, email, tier, display_name, created_at, last_seen)
+                .prepare(`INSERT INTO users (id, patreon_id, email, username, tier, created_at, last_seen)
                           VALUES (?, ?, ?, ?, ?, ?, ?)`)
-                .bind(newId, pUser.id, email, tier, name, now, now)
+                .bind(newId, pUser.id, email, null, tier, now, now)
                 .run();
 
             const setupToken = await signSetupJWT({
                 patreonId:      pUser.id,
                 email,
-                name,
+                name:           patreonName,
                 tier,
                 isReset:        false,
                 existingUserId: newId,
@@ -130,7 +130,7 @@ export async function onRequestGet({ request, env }) {
         const setupToken = await signSetupJWT({
             patreonId:      pUser.id,
             email,
-            name,
+            name:           patreonName,
             tier:           existing.tier_override ? existing.tier : tier,
             isReset:        false,
             existingUserId: existing.id,

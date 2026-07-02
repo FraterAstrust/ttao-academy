@@ -27,8 +27,8 @@ export async function onRequestPost({ request, env }) {
     const user    = await env.DB
         .prepare(
             isEmail
-                ? 'SELECT id, patreon_id, email, username, display_name, tier, password_hash FROM users WHERE LOWER(email) = ?'
-                : 'SELECT id, patreon_id, email, username, display_name, tier, password_hash FROM users WHERE LOWER(username) = ?'
+                ? 'SELECT id, patreon_id, email, username, tier, password_hash FROM users WHERE LOWER(email) = ?'
+                : 'SELECT id, patreon_id, email, username, tier, password_hash FROM users WHERE LOWER(username) = ?'
         )
         .bind(normalized)
         .first();
@@ -52,7 +52,7 @@ export async function onRequestPost({ request, env }) {
         patreonId: user.patreon_id,
         email:     user.email,
         username:  user.username,
-        name:      user.display_name,
+        name:      user.username,
         tier:      user.tier,
     }, env.JWT_SECRET, SESSION_DURATION);
 

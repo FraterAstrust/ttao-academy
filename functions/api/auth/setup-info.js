@@ -11,7 +11,7 @@ export async function onRequestGet({ request, env }) {
 
     return json({
         email:            setup.email,
-        name:             setup.name,
+        patreonAccount:   setup.name,
         tier:             setup.tier,
         isReset:          setup.isReset || false,
         existingUsername: setup.existingUsername || null,

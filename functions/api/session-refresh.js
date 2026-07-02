@@ -21,13 +21,13 @@ export async function onRequestPost({ request, env }) {
     let { tier, username, name } = session;
     try {
         const user = await env.DB
-            .prepare('SELECT tier, username, display_name FROM users WHERE id = ?')
+            .prepare('SELECT tier, username FROM users WHERE id = ?')
             .bind(session.userId)
             .first();
         if (user) {
             tier     = user.tier;
             username = user.username;
-            name     = user.display_name || name;
+            name     = user.username || name;
         }
     } catch (_) { /* non-fatal */ }
 

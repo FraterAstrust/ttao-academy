@@ -19,7 +19,7 @@ export async function onRequestGet({ request, env }) {
     // Sync tier and profile from D1 — catches admin overrides and Patreon re-auths
     try {
         const user = await env.DB
-            .prepare('SELECT tier, username, display_name FROM users WHERE id = ?')
+            .prepare('SELECT tier, username FROM users WHERE id = ?')
             .bind(session.userId)
             .first();
 
@@ -27,7 +27,7 @@ export async function onRequestGet({ request, env }) {
             const changed = user.tier !== tier || user.username !== username;
             tier     = user.tier;
             username = user.username;
-            name     = user.display_name || name;
+            name     = user.username || name;
 
             if (changed) {
                 const newToken = await signJWT({

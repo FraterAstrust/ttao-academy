@@ -39,7 +39,7 @@
             if (!info) return;
 
             const disp = document.getElementById('identity-display');
-            disp.innerHTML = 'Patreon account: <strong class="text-bright">' + info.email + '</strong>';
+            disp.innerHTML = 'Patreon account: <strong class="text-bright">' + (info.patreonAccount || info.email) + '</strong>';
             identityRow.classList.remove('hidden');
 
             if (info.isReset) {
@@ -47,7 +47,6 @@
                 document.getElementById('page-lead').textContent = 'Choose a new password for your account.';
                 setupBtn.textContent = 'Update Password';
                 usernameField.classList.add('hidden');
-                usernameOk = true;
                 passwordEl.focus();
             } else {
                 usernameEl.focus();
@@ -55,31 +54,7 @@
         });
 
     usernameEl.addEventListener('input', function() {
-        clearTimeout(checkTimer);
-        setStatus('', '');
-        usernameOk = false;
-
-        var val = usernameEl.value.trim();
-        if (!val || val.length < 3) return;
-
-        checkTimer = setTimeout(function() {
-            setStatus('…', '');
-            fetch('/api/auth/check-username?username=' + encodeURIComponent(val))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data.error) {
-                        setStatus(data.error, 'taken');
-                        usernameOk = false;
-                    } else if (data.available) {
-                        setStatus('✓ available', 'available');
-                        usernameOk = true;
-                    } else {
-                        setStatus('✗ taken', 'taken');
-                        usernameOk = false;
-                    }
-                })
-                .catch(function() { setStatus('', ''); });
-        }, 400);
+        clearError();
     });
 
     async function doSetup() {
@@ -89,8 +64,7 @@
         var password        = passwordEl.value;
         var confirmPassword = confirmEl.value;
 
-        if (!isReset && !username) { showError('Please choose a username.'); return; }
-        if (!isReset && !usernameOk) { showError('Please choose a valid, available username.'); return; }
+        if (!isReset && !username) { showError('Please enter a display name.'); return; }
         if (!password) { showError('Please enter a password.'); return; }
         if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
         if (password !== confirmPassword) { showError('Passwords do not match.'); return; }

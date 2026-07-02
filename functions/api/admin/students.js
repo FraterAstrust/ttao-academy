@@ -11,12 +11,12 @@ export async function onRequest({ request, env }) {
     try {
         if (method === 'GET') {
             const rows = await env.DB
-                .prepare('SELECT id, email, username, display_name, tier, tier_override, is_admin, last_seen FROM users')
+                .prepare('SELECT id, email, username, tier, tier_override, is_admin, last_seen FROM users')
                 .all();
 
             const students = (rows.results || rows).map(user => ({
                 userId:       user.id,
-                name:         user.display_name || user.username || '—',
+                name:         user.username || '—',
                 email:        user.email,
                 tier:         user.tier,
                 tierOverride: user.tier_override === 1,
