@@ -9,7 +9,7 @@
 import {
     verifyPassword, signJWT,
     sessionCookie, json, SESSION_DURATION,
-} from '../_shared/utils.js';
+} from '../../_shared/utils.js';
 
 const GENERIC_ERROR = 'Incorrect credentials.';
 

@@ -3,7 +3,7 @@
  * Called from the setup page as the user types.
  * Returns { available: boolean, error?: string }
  */
-import { verifySetupJWT, validateUsername, json } from '../_shared/utils.js';
+import { verifySetupJWT, validateUsername, json } from '../../_shared/utils.js';
 
 export async function onRequestGet({ request, env }) {
     // Must have a valid setup session to check usernames

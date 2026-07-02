@@ -3,7 +3,7 @@
  * Returns the data the setup page needs to pre-fill fields.
  * Reads the short-lived httpOnly ttao_setup cookie.
  */
-import { verifySetupJWT, json } from '../_shared/utils.js';
+import { verifySetupJWT, json } from '../../_shared/utils.js';
 
 export async function onRequestGet({ request, env }) {
     const setup = await verifySetupJWT(request, env);
