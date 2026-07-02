@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash   TEXT,                      -- NULL until setup complete
     tier            TEXT NOT NULL DEFAULT 'tyro',
     tier_override   INTEGER NOT NULL DEFAULT 0, -- 1 = manually set by admin
+    is_admin        INTEGER NOT NULL DEFAULT 0, -- 1 = admin user override
     display_name    TEXT,                      -- full name from Patreon initially
     bio             TEXT,
     avatar_r2_key   TEXT,

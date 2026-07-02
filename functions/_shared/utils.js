@@ -172,7 +172,6 @@ export function getAdminIds(env) {
 }
 
 export function getTier(amountCents, userId, env) {
-    if (getAdminIds(env).includes(userId)) return 'adept';
     if (amountCents >= 3300) return 'scholar';
     if (amountCents >= 1500) return 'adept';
     if (amountCents >= 1000) return 'initiate';

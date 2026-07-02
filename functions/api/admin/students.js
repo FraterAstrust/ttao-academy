@@ -20,6 +20,7 @@ export async function onRequest({ request, env }) {
                 email:        user.email,
                 tier:         user.tier,
                 tierOverride: user.tier_override === 1,
+                isAdmin:      user.is_admin === 1,
                 lastSeen:     user.last_seen,
             }));
 
@@ -30,21 +31,36 @@ export async function onRequest({ request, env }) {
         if (method === 'PUT') {
             if (!id) return json({ error: 'id required' }, 400);
             const existing = await env.DB
-                .prepare('SELECT id, tier, tier_override FROM users WHERE id = ?')
+                .prepare('SELECT id, tier, tier_override, is_admin FROM users WHERE id = ?')
                 .bind(id)
                 .first();
             if (!existing) return json({ error: 'Not found' }, 404);
 
-            const { tier } = await request.json();
+            const body = await request.json();
+            const updates = [];
+            const params = [];
+
+            if (body.tier) {
+                updates.push('tier = ?', 'tier_override = 1');
+                params.push(body.tier);
+            }
+            if (body.isAdmin !== undefined) {
+                updates.push('is_admin = ?');
+                params.push(body.isAdmin ? 1 : 0);
+            }
+            if (!updates.length) return json({ error: 'Nothing to update' }, 400);
+
+            params.push(id);
             await env.DB
-                .prepare('UPDATE users SET tier = ?, tier_override = 1 WHERE id = ?')
-                .bind(tier, id)
+                .prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`)
+                .bind(...params)
                 .run();
 
             return json({
                 userId:       id,
-                tier,
-                tierOverride: true,
+                tier:         body.tier || existing.tier,
+                tierOverride: body.tier ? true : existing.tier_override === 1,
+                isAdmin:      body.isAdmin !== undefined ? !!body.isAdmin : existing.is_admin === 1,
             });
         }
 

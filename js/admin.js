@@ -279,7 +279,7 @@ async function renderStudents() {
 
         wrap.innerHTML =
             '<table class="data-table"><thead><tr>' +
-            '<th>Name</th><th>Email</th><th>Tier</th><th>Last Seen</th><th>Override</th>' +
+            '<th>Name</th><th>Email</th><th>Tier</th><th>Admin</th><th>Last Seen</th><th>Override</th>' +
             '</tr></thead><tbody>' +
             students.map(function(s) {
                 return '<tr>' +
@@ -287,6 +287,7 @@ async function renderStudents() {
                     '<td class="td-email">' + (s.email || '—') + '</td>' +
                     '<td><select class="tier-select" data-id="' + s.userId + '">' +
                     tierOptions(s.tier) + '</select></td>' +
+                    '<td><label class="admin-toggle-label"><input type="checkbox" class="admin-toggle" data-id="' + s.userId + '"' + (s.isAdmin ? ' checked' : '') + '> Admin</label></td>' +
                     '<td class="td-date">' + new Date(s.lastSeen).toLocaleDateString() + '</td>' +
                     '<td>' + (s.tierOverride ? '<span class="override-badge">Manual</span>' : '—') + '</td>' +
                     '</tr>';
@@ -304,6 +305,27 @@ async function renderStudents() {
                     setTimeout(function() { sel.style.borderColor = ''; }, 1500);
                 } catch (e) {
                     alert('Failed to update tier: ' + e.message);
+                }
+            });
+        });
+
+        wrap.querySelectorAll('.admin-toggle').forEach(function(input) {
+            input.addEventListener('change', async function() {
+                try {
+                    input.disabled = true;
+                    await api('/api/admin/students?id=' + input.dataset.id, {
+                        method: 'PUT',
+                        body: JSON.stringify({ isAdmin: input.checked }),
+                    });
+                    input.parentNode.classList.add('admin-updated');
+                    setTimeout(function() {
+                        input.parentNode.classList.remove('admin-updated');
+                        input.disabled = false;
+                    }, 1500);
+                } catch (e) {
+                    input.checked = !input.checked;
+                    input.disabled = false;
+                    alert('Failed to update admin status: ' + e.message);
                 }
             });
         });
