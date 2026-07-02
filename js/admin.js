@@ -287,7 +287,8 @@ async function renderStudents() {
                     '<td class="td-email">' + (s.email || '—') + '</td>' +
                     '<td><select class="tier-select" data-id="' + s.userId + '">' +
                     tierOptions(s.tier) + '</select></td>' +
-                    '<td><label class="admin-toggle-label"><input type="checkbox" class="admin-toggle" data-id="' + s.userId + '"' + (s.isAdmin ? ' checked' : '') + '> Admin</label></td>' +
+                    '<td class="td-admin-cell"><label class="admin-toggle-label"><input type="checkbox" class="admin-toggle" data-id="' + s.userId + '"' + (s.isAdmin ? ' checked' : '') + '> Admin</label>' +
+                    (s.isAdmin ? '<span class="admin-badge">Admin</span>' : '') + '</td>' +
                     '<td class="td-date">' + new Date(s.lastSeen).toLocaleDateString() + '</td>' +
                     '<td>' + (s.tierOverride ? '<span class="override-badge">Manual</span>' : '—') + '</td>' +
                     '</tr>';
