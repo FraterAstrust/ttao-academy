@@ -39,6 +39,7 @@ export async function onRequest({ request, env }) {
                 title, content, tier = 'tyro', published = false,
                 contentType: ct = 'articles',
                 moduleNumber, bulletinNumber, glyph,
+                authorVoice = 'Frater Astrust',
             } = body;
             if (!title || !content) return json({ error: 'title and content required' }, 400);
 
@@ -46,11 +47,18 @@ export async function onRequest({ request, env }) {
             const newId  = prefix + slugify(title) + '-' + Date.now();
             const now    = new Date().toISOString();
             const item   = {
-                id: newId, title, content, tier, published, contentType: ct,
+                id: newId,
+                title,
+                content,
+                tier,
+                published,
+                contentType: ct,
+                authorVoice,
                 ...(moduleNumber   && { moduleNumber }),
                 ...(bulletinNumber && { bulletinNumber }),
                 ...(glyph          && { glyph }),
-                createdAt: now, updatedAt: now,
+                createdAt: now,
+                updatedAt: now,
             };
             await store.setJSON(newId, item);
             return json(item, 201);

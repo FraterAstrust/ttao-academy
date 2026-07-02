@@ -104,16 +104,25 @@
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify({ username: username, password: password, confirmPassword: confirmPassword }),
             });
-            var data = await res.json();
+            var data;
+            try {
+                data = await res.json();
+            } catch (err) {
+                var text = await res.text();
+                console.error('Setup response parse failed:', err, text);
+                throw new Error('Unexpected server response. Check the console for details.');
+            }
 
             if (res.ok && data.ok) {
                 window.location.href = '/dashboard';
                 return;
             }
 
+            console.error('Setup failed:', res.status, data);
             showError(data.error || 'Setup failed. Please try again.');
         } catch (e) {
-            showError('Network error. Please try again.');
+            console.error('Setup request error:', e);
+            showError(e.message || 'Network error. Please try again.');
         } finally {
             setupBtn.disabled    = false;
             setupBtn.textContent = isReset ? 'Update Password' : 'Enter the Order';

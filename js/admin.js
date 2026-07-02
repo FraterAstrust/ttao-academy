@@ -99,14 +99,15 @@ async function renderContentList(type) {
 
         wrap.innerHTML =
             '<table class="data-table"><thead><tr>' +
-            '<th>Title</th>' + xHead + '<th>Min Tier</th><th>Status</th><th>Updated</th><th></th>' +
+            '<th>Title</th><th>Voice</th>' + xHead + '<th>Min Tier</th><th>Status</th><th>Updated</th><th></th>' +
             '</tr></thead><tbody>' +
             items.map(function(a) {
                 var xCell = type === 'lessons' ? '<td class="td-date">' + (a.moduleNumber   || '—') + '</td>'
                           : type === 'labs'    ? '<td class="td-date">' + (a.bulletinNumber || '—') + '</td>'
                           : '';
                 return '<tr>' +
-                    '<td class="td-title">' + a.title + '</td>' + xCell +
+                    '<td class="td-title">' + a.title + '</td>' +
+                    '<td>' + (a.authorVoice || 'Frater Astrust') + '</td>' + xCell +
                     '<td><span class="tier-pill tier-' + a.tier + '">' + a.tier + '</span></td>' +
                     '<td><span class="status-pill ' + (a.published ? 'published' : 'draft') + '">' +
                     (a.published ? 'Published' : 'Draft') + '</span></td>' +
@@ -156,6 +157,11 @@ async function renderEditor(id, contentType) {
         '<div class="field-row">' +
         '<div class="field"><label class="field-label">Title</label>' +
         '<input type="text" id="ed-title" class="field-input" placeholder="' + ct.singular + ' title"></div>' +
+        '<div class="field field-sm"><label class="field-label">Author Voice</label>' +
+        '<select id="ed-author-voice" class="field-input">' +
+            '<option value="Frater Astrust">Frater Astrust</option>' +
+            '<option value="Caelus Valentinus">Caelus Valentinus</option>' +
+        '</select></div>' +
         extraField +
         '<div class="field field-sm"><label class="field-label">Minimum Tier</label>' +
         '<select id="ed-tier" class="field-input">' + tierOptions('tyro') + '</select></div>' +
@@ -176,6 +182,7 @@ async function renderEditor(id, contentType) {
         '</div></div></div>';
 
     var titleEl   = document.getElementById('ed-title');
+    var authorEl  = document.getElementById('ed-author-voice');
     var contentEl = document.getElementById('ed-content');
     var tierEl    = document.getElementById('ed-tier');
     var pubEl     = document.getElementById('ed-published');
@@ -187,6 +194,7 @@ async function renderEditor(id, contentType) {
             var item = await api('/api/admin/articles?id=' + id);
             if (!item) return;
             titleEl.value   = item.title;
+            authorEl.value  = item.authorVoice || 'Frater Astrust';
             contentEl.value = item.content;
             tierEl.value    = item.tier;
             pubEl.value     = String(item.published);
@@ -210,6 +218,7 @@ async function renderEditor(id, contentType) {
 
         var payload = Object.assign({
             title:       titleEl.value.trim(),
+            authorVoice: authorEl.value,
             content:     contentEl.value,
             tier:        tierEl.value,
             published:   pubEl.value === 'true',
@@ -424,12 +433,22 @@ function renderPreview() {
 
 async function init() {
     // Verify admin status via httpOnly cookie (server checks the cookie)
+    var adminPayload;
     try {
         var res = await fetch('/api/admin/me');
         if (!res.ok) { window.location.href = '/auth/admin'; return; }
+        adminPayload = await res.json();
     } catch (e) {
         window.location.href = '/auth/admin';
         return;
+    }
+
+    if (adminPayload && adminPayload.name) {
+        var badge = document.querySelector('.dash-admin-badge');
+        if (badge) {
+            badge.textContent = adminPayload.name.toUpperCase();
+            badge.title = 'Verified admin authenticated by Patreon';
+        }
     }
 
     document.querySelectorAll('.nav-item').forEach(function(btn) {

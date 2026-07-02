@@ -456,6 +456,24 @@ body {
 
 /* ── ARTICLE BODY ── */
 .article-body { max-width: 680px; }
+.article-author {
+    font-size: 0.9rem;
+    color: var(--gold-dim);
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.author-badge {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text);
+    background: rgba(212,175,55,0.08);
+    border: 1px solid rgba(212,175,55,0.15);
+    border-radius: 999px;
+    padding: 0.2rem 0.5rem;
+}
 .article-body h1, .article-body h2, .article-body h3 {
     font-family: 'Cinzel', serif;
     color: var(--gold);

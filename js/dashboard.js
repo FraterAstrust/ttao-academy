@@ -316,6 +316,8 @@ async function init() {
                     '<button class="back-btn" id="back-btn">← Back</button>' +
                     eyebrow +
                     '<h1 class="panel-title">' + item.title + '</h1>' +
+                    (item.authorVoice ? '<div class="article-author">By ' + item.authorVoice +
+                        ' <span class="author-badge">Verified Admin</span></div>' : '') +
                     '<div class="article-body">' +
                     '<span style="position:absolute;opacity:0;font-size:0;user-select:none" aria-hidden="true">' +
                     encodeZW(payload.userId || '') + '</span>' +
