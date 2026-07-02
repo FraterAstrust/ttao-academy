@@ -240,6 +240,13 @@ body {
 
 .footer-link:hover { opacity: 1; }
 
+.hidden { display: none !important; }
+
+.max-width-480 { max-width: 480px; }
+.max-width-300 { max-width: 300px; }
+.text-bright { color: var(--text-bright); }
+.link-gold { color: var(--gold); }
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: #080808; }

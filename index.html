@@ -43,7 +43,7 @@
         </p>
 
         <!-- Error messages from auth redirects -->
-        <div id="auth-error" class="auth-error" style="display:none"></div>
+        <div id="auth-error" class="auth-error hidden"></div>
 
         <div class="gate-actions">
             <!-- Returning students -->
@@ -73,9 +73,7 @@
         <a href="https://fraterastrust.github.io" class="footer-link">Public Site</a>
     </footer>
 
-    <script>
-    // Surface auth error codes from redirect params
-    (function() {
+    <script src="/js/index.js"></script>
         var params = new URLSearchParams(window.location.search);
         var auth   = params.get('auth');
         var msgs   = {
