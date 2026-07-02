@@ -23,13 +23,14 @@ export async function onRequestPost({ request, env }) {
 
     // Look up by email OR username
     const isEmail = identifier.includes('@');
+    const normalized = identifier.trim().toLowerCase();
     const user    = await env.DB
         .prepare(
             isEmail
-                ? 'SELECT id, patreon_id, email, username, display_name, tier, password_hash FROM users WHERE email = ?'
-                : 'SELECT id, patreon_id, email, username, display_name, tier, password_hash FROM users WHERE username = ?'
+                ? 'SELECT id, patreon_id, email, username, display_name, tier, password_hash FROM users WHERE LOWER(email) = ?'
+                : 'SELECT id, patreon_id, email, username, display_name, tier, password_hash FROM users WHERE LOWER(username) = ?'
         )
-        .bind(identifier.trim().toLowerCase())
+        .bind(normalized)
         .first();
 
     // No user or setup incomplete

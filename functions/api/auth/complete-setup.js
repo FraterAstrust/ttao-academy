@@ -25,7 +25,8 @@ export async function onRequestPost({ request, env }) {
     catch { return json({ error: 'Invalid request body.' }, 400); }
 
     try {
-        const { username, password, confirmPassword } = body;
+        let { username, password, confirmPassword } = body;
+        username = (username || '').trim();
 
         if (!setup.existingUserId) {
             return json({ error: 'Setup session missing user ID.' }, 400);
@@ -41,10 +42,10 @@ export async function onRequestPost({ request, env }) {
             const usernameError = validateUsername(username);
             if (usernameError) return json({ error: usernameError }, 400);
 
-            // Check uniqueness in D1
+            // Check uniqueness in D1 (case-insensitive)
             const taken = await env.DB
-                .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
-                .bind(username, setup.existingUserId)
+                .prepare('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?')
+                .bind(username.toLowerCase(), setup.existingUserId)
                 .first();
             if (taken) return json({ error: 'That username is already taken.' }, 409);
         }

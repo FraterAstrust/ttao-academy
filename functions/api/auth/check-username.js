@@ -17,8 +17,8 @@ export async function onRequestGet({ request, env }) {
     if (validationError) return json({ available: false, error: validationError });
 
     const taken = await env.DB
-        .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
-        .bind(username, setup.existingUserId || '')
+        .prepare('SELECT id FROM users WHERE LOWER(username) = ? AND id != ?')
+        .bind(username.toLowerCase(), setup.existingUserId || '')
         .first();
 
     return json({ available: !taken });
