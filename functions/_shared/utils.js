@@ -61,7 +61,7 @@ export async function hashPassword(password) {
         'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']
     );
     const bits = await crypto.subtle.deriveBits(
-        { name: 'PBKDF2', salt, iterations: 210_000, hash: 'SHA-256' },
+        { name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' },
         key, 256
     );
     const hex = arr => Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -76,7 +76,7 @@ export async function verifyPassword(password, stored) {
         'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']
     );
     const bits   = await crypto.subtle.deriveBits(
-        { name: 'PBKDF2', salt, iterations: 210_000, hash: 'SHA-256' },
+        { name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' },
         key, 256
     );
     const newHex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
