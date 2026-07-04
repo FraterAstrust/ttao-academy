@@ -17,6 +17,7 @@ var TIERS = {
 
 var NAV_ITEMS = {
     welcome:  { icon: '⌂',  label: 'Welcome'        },
+    notes:    { icon: '🖋', label: 'My Notes'       },
     articles: { icon: '📜', label: 'Articles'       },
     lessons:  { icon: '⚗',  label: 'Lesson Modules' },
     labs:     { icon: '🧪', label: 'Lab Guides'     },
@@ -27,8 +28,8 @@ var NAV_ITEMS = {
 
 function getNav(tier) {
     return (TIER_RANK[tier] || 0) >= TIER_RANK.zelator
-        ? ['welcome', 'articles', 'lessons', 'labs', 'discord', 'stoat']
-        : ['welcome', 'articles', 'discord', 'upgrade'];
+        ? ['welcome', 'notes', 'articles', 'lessons', 'labs', 'discord', 'stoat']
+        : ['welcome', 'notes', 'articles', 'discord', 'upgrade'];
 }
 
 // ── SESSION REFRESH ────────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ function renderPersonalSeal(payload, tier) {
         '<span class="seal-sigil">⊕</span>' +
         '<span class="seal-name">' + (payload.name || 'Student') + '</span>' +
         '<span class="seal-dot">·</span>' +
-        '<span class="seal-tier" style="color:' + tierCfg.color + '">' + tierCfg.label + '</span>' +
+        '<span class="seal-tier tier-' + tier + '">' + tierCfg.label + '</span>' +
         '<span class="seal-dot">·</span>' +
         '<span class="seal-hash">' + hash + '</span>' +
         '</div></div>';
@@ -198,7 +199,7 @@ function loadContentList(contentType, wrapId, renderCard, onCardClick) {
             var wrap = document.getElementById(wrapId);
             if (!wrap) return;
             if (!Array.isArray(list) || !list.length) {
-                wrap.innerHTML = '<p style="opacity:0.5;font-style:italic">Nothing published in this section yet.</p>';
+                wrap.innerHTML = '<p class="empty-state">Nothing published in this section yet.</p>';
                 return;
             }
             wrap.innerHTML = '<div class="card-grid">' + list.map(renderCard).join('') + '</div>';
@@ -211,6 +212,73 @@ function loadContentList(contentType, wrapId, renderCard, onCardClick) {
             var wrap = document.getElementById(wrapId);
             if (wrap) wrap.innerHTML = '<p class="error-state">Failed to load: ' + e + '</p>';
         });
+}
+
+// ── NOTES API ──────────────────────────────────────────────────────────────────
+
+function fetchNotes(contentId) {
+    var qs = contentId ? ('?contentId=' + encodeURIComponent(contentId)) : '';
+    return fetch('/api/notes' + qs).then(function(r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+    });
+}
+
+function saveNote(payload, id) {
+    return fetch('/api/notes' + (id ? '?id=' + encodeURIComponent(id) : ''), {
+        method:  id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+    }).then(function(r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+    });
+}
+
+function deleteNoteRequest(id) {
+    return fetch('/api/notes?id=' + encodeURIComponent(id), { method: 'DELETE' });
+}
+
+// ── COMMENTS API ───────────────────────────────────────────────────────────────
+
+function fetchComments(contentId, contentType) {
+    return fetch('/api/comments?contentId=' + encodeURIComponent(contentId) + '&contentType=' + encodeURIComponent(contentType))
+        .then(function(r) {
+            if (!r.ok) throw new Error(r.status);
+            return r.json();
+        });
+}
+
+function postComment(payload) {
+    return fetch('/api/comments', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+    }).then(function(r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+    });
+}
+
+function deleteCommentRequest(id) {
+    return fetch('/api/comments?id=' + encodeURIComponent(id), { method: 'DELETE' });
+}
+
+function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderCommentItem(c) {
+    var badge  = c.isAdminReply ? '<span class="admin-badge">Admin</span>' : '';
+    var delBtn = (c.isOwn && !c.isAdminReply)
+        ? '<div class="comment-actions"><button class="action-btn danger" data-action="delete-comment" data-id="' + c.id + '">Delete</button></div>'
+        : '';
+    return '<div class="comment-item' + (c.isAdminReply ? ' comment-admin' : '') + '">' +
+        '<div class="comment-head"><span class="comment-author">' + escapeHtml(c.authorName) + '</span>' + badge +
+        '<span class="comment-date">' + new Date(c.createdAt).toLocaleDateString() + '</span></div>' +
+        '<div class="comment-body">' + escapeHtml(c.body).replace(/\n/g, '<br>') + '</div>' +
+        delBtn +
+        '</div>';
 }
 
 // ── MOBILE SIDEBAR ─────────────────────────────────────────────────────────────
@@ -268,7 +336,7 @@ async function init() {
     var tierCfg = TIERS[tier] || TIERS.tyro;
 
     document.getElementById('sidebar-tier').innerHTML =
-        '<span class="tier-badge" style="color:' + tierCfg.color + '">' + tierCfg.label + '</span>';
+        '<span class="tier-badge tier-' + tier + '">' + tierCfg.label + '</span>';
 
     var navIds = getNav(tier);
     document.getElementById('sidebar-nav').innerHTML = navIds.map(function(id) {
@@ -295,6 +363,95 @@ async function init() {
             : '<div class="panel"><p>Coming soon.</p></div>';
     }
 
+    // ── Personal note attached to a piece of content (inline, on the article view) ──
+
+    function loadArticleNote(contentId, contentTitle, contentType) {
+        var panel = document.getElementById('note-panel');
+        if (!panel) return;
+        fetchNotes(contentId).then(function(notes) {
+            var existing = notes[0]; // most recently updated note on this content
+            panel.innerHTML =
+                '<div class="note-section-header">🖋 My Note on This</div>' +
+                '<textarea id="inline-note-body" class="md-input min-height-100" ' +
+                'placeholder="Private notes only you can see…">' + escapeHtml(existing ? existing.body : '') + '</textarea>' +
+                '<div class="editor-actions">' +
+                '<button class="btn btn-outline" id="inline-note-save">' + (existing ? 'Update Note' : 'Save Note') + '</button>' +
+                '<span class="save-status" id="inline-note-status"></span></div>';
+
+            document.getElementById('inline-note-save').addEventListener('click', function() {
+                var status = document.getElementById('inline-note-status');
+                var body   = document.getElementById('inline-note-body').value.trim();
+                if (!body) { status.textContent = 'Note cannot be empty.'; return; }
+                status.textContent = 'Saving…';
+                saveNote({
+                    body: body, contentId: contentId, contentType: contentType, contentTitle: contentTitle,
+                }, existing ? existing.id : null).then(function() {
+                    status.textContent = '✓ Saved';
+                    loadArticleNote(contentId, contentTitle, contentType);
+                }).catch(function(e) { status.textContent = 'Error: ' + e; });
+            });
+        }).catch(function() {
+            panel.innerHTML = '<p class="error-state">Could not load your note.</p>';
+        });
+    }
+
+    // ── Public discussion + private feedback, on the article view ──
+
+    function loadArticleComments(contentId, contentType) {
+        var panel = document.getElementById('comments-panel');
+        if (!panel) return;
+        fetchComments(contentId, contentType).then(function(data) {
+            panel.innerHTML =
+                '<div class="comments-section">' +
+                '<div class="note-section-header">💬 Discussion</div>' +
+                '<div id="public-comments-list">' +
+                (data.public.length ? data.public.map(renderCommentItem).join('') : '<p class="empty-state">No comments yet — be the first.</p>') +
+                '</div>' +
+                '<textarea id="public-comment-input" class="md-input min-height-70" placeholder="Share a thought with fellow students…"></textarea>' +
+                '<div class="editor-actions">' +
+                '<button class="btn btn-cyan" id="public-comment-send">Post Comment</button>' +
+                '<span class="save-status" id="public-comment-status"></span></div>' +
+                '</div>' +
+                '<div class="comments-section">' +
+                '<div class="note-section-header">✉ Private Feedback to the Order</div>' +
+                '<p class="gate-hint">Visible only to you and the administrators.</p>' +
+                '<div id="private-comments-list">' +
+                (data.private.length ? data.private.map(renderCommentItem).join('') : '<p class="empty-state">No private messages yet.</p>') +
+                '</div>' +
+                '<textarea id="private-comment-input" class="md-input min-height-70" placeholder="Ask a question or leave feedback for the admins…"></textarea>' +
+                '<div class="editor-actions">' +
+                '<button class="btn btn-outline" id="private-comment-send">Send Privately</button>' +
+                '<span class="save-status" id="private-comment-status"></span></div>' +
+                '</div>';
+
+            function wireSend(kind, inputId, btnId, statusId) {
+                document.getElementById(btnId).addEventListener('click', function() {
+                    var status = document.getElementById(statusId);
+                    var input  = document.getElementById(inputId);
+                    var text   = input.value.trim();
+                    if (!text) { status.textContent = 'Message cannot be empty.'; return; }
+                    status.textContent = 'Sending…';
+                    postComment({ contentId: contentId, contentType: contentType, kind: kind, body: text })
+                        .then(function() {
+                            loadArticleComments(contentId, contentType);
+                        })
+                        .catch(function(e) { status.textContent = 'Error: ' + e; });
+                });
+            }
+            wireSend('public',  'public-comment-input',  'public-comment-send',  'public-comment-status');
+            wireSend('private', 'private-comment-input', 'private-comment-send', 'private-comment-status');
+
+            panel.addEventListener('click', function(e) {
+                var btn = e.target.closest('[data-action="delete-comment"]');
+                if (!btn) return;
+                if (!confirm('Delete this comment?')) return;
+                deleteCommentRequest(btn.dataset.id).then(function() { loadArticleComments(contentId, contentType); });
+            });
+        }).catch(function() {
+            panel.innerHTML = '<p class="error-state">Could not load discussion.</p>';
+        });
+    }
+
     function showContent(id, backPanel) {
         document.getElementById('dash-content').innerHTML =
             '<div class="panel"><div class="loading">Loading…</div></div>';
@@ -319,16 +476,21 @@ async function init() {
                     (item.authorVoice ? '<div class="article-author">By ' + item.authorVoice +
                         ' <span class="author-badge">Verified Admin</span></div>' : '') +
                     '<div class="article-body">' +
-                    '<span style="position:absolute;opacity:0;font-size:0;user-select:none" aria-hidden="true">' +
+                    '<span class="watermark-hidden" aria-hidden="true">' +
                     encodeZW(payload.userId || '') + '</span>' +
                     renderTieredContent(item.content, tier) +
                     '</div>' +
+                    '<div class="note-panel" id="note-panel"><div class="loading">Loading your note…</div></div>' +
+                    '<div class="comments-panel" id="comments-panel"><div class="loading">Loading discussion…</div></div>' +
                     renderPersonalSeal(payload, tier) +
                     '</div>';
 
                 document.getElementById('back-btn').onclick = function() {
                     showPanel(backPanel || 'articles');
                 };
+
+                loadArticleNote(item.id, item.title, item.contentType || 'articles');
+                loadArticleComments(item.id, item.contentType || 'articles');
 
                 if (wmDataUrl) {
                     var existing = document.getElementById('wm-overlay');
@@ -344,6 +506,85 @@ async function init() {
                 document.getElementById('dash-content').innerHTML =
                     '<div class="panel"><p class="error-state">Failed to load content.</p></div>';
             });
+    }
+
+    // ── My Notes notebook (freeform + attached notes) ──
+
+    function renderNoteCard(n) {
+        var attached = n.contentTitle ? '<div class="note-attached">On: ' + escapeHtml(n.contentTitle) + '</div>' : '';
+        var title    = n.title ? '<div class="note-title">' + escapeHtml(n.title) + '</div>' : '';
+        return '<div class="note-card">' +
+            attached + title +
+            '<div class="note-body">' + escapeHtml(n.body).replace(/\n/g, '<br>') + '</div>' +
+            '<div class="note-meta">' + new Date(n.updatedAt).toLocaleString() + '</div>' +
+            '<div class="note-actions">' +
+            '<button class="action-btn" data-action="edit-note" data-id="' + n.id + '">Edit</button>' +
+            '<button class="action-btn danger" data-action="delete-note" data-id="' + n.id + '">Delete</button>' +
+            '</div></div>';
+    }
+
+    function loadNotesList() {
+        fetchNotes().then(function(notes) {
+            var wrap = document.getElementById('notes-wrap');
+            if (!wrap) return;
+            if (!notes.length) {
+                wrap.innerHTML = '<p class="empty-state">No notes yet. Start with the Great Work of self-observation.</p>';
+                return;
+            }
+            wrap.innerHTML = '<div class="notes-grid">' + notes.map(renderNoteCard).join('') + '</div>';
+            wrap.addEventListener('click', function(e) {
+                var btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                if (btn.dataset.action === 'edit-note') {
+                    var note = notes.find(function(n) { return n.id === btn.dataset.id; });
+                    renderNoteEditor(note);
+                }
+                if (btn.dataset.action === 'delete-note') {
+                    if (!confirm('Delete this note?')) return;
+                    deleteNoteRequest(btn.dataset.id).then(function() { loadNotesList(); });
+                }
+            });
+        }).catch(function(e) {
+            var wrap = document.getElementById('notes-wrap');
+            if (wrap) wrap.innerHTML = '<p class="error-state">Failed to load notes: ' + e + '</p>';
+        });
+    }
+
+    function renderNoteEditor(note) {
+        document.getElementById('dash-content').innerHTML =
+            '<div class="panel fade-in">' +
+            '<button class="back-btn" id="note-back-btn">← Back</button>' +
+            '<div class="panel-eyebrow">Personal</div>' +
+            '<h1 class="panel-title">' + (note ? 'Edit Note' : 'New Note') + '</h1>' +
+            (note && note.contentTitle ? '<div class="note-attached">Attached to: ' + escapeHtml(note.contentTitle) + '</div>' : '') +
+            '<div class="field">' +
+            '<label class="field-label">Title (optional)</label>' +
+            '<input type="text" id="note-title" class="field-input" value="' + (note && note.title ? escapeHtml(note.title) : '') + '"></div>' +
+            '<div class="field">' +
+            '<label class="field-label">Note</label>' +
+            '<textarea id="note-body" class="md-input min-height-260">' + escapeHtml(note ? note.body : '') + '</textarea></div>' +
+            '<div class="editor-actions editor-actions--large">' +
+            '<button class="btn btn-gold" id="note-save-btn">Save Note</button>' +
+            '<span class="save-status" id="note-save-status"></span>' +
+            '</div></div>';
+
+        document.getElementById('note-back-btn').addEventListener('click', function() { showPanel('notes'); });
+        document.getElementById('note-save-btn').addEventListener('click', function() {
+            var status = document.getElementById('note-save-status');
+            var body   = document.getElementById('note-body').value.trim();
+            if (!body) { status.textContent = 'Note cannot be empty.'; return; }
+            status.textContent = 'Saving…';
+            var payloadOut = { title: document.getElementById('note-title').value.trim(), body: body };
+            if (note) {
+                payloadOut.contentId    = note.contentId;
+                payloadOut.contentType  = note.contentType;
+                payloadOut.contentTitle = note.contentTitle;
+            }
+            saveNote(payloadOut, note ? note.id : null).then(function() {
+                status.textContent = '✓ Saved';
+                setTimeout(function() { showPanel('notes'); }, 500);
+            }).catch(function(e) { status.textContent = 'Error: ' + e; });
+        });
     }
 
     // Helper to create a content-list panel with card clicks wired to showContent
@@ -371,16 +612,31 @@ async function init() {
                 '<div class="panel-eyebrow">Welcome</div>' +
                 '<h1 class="panel-title">Salve, ' + (payload.name || 'Soror/Frater') + '.</h1>' +
                 '<p class="panel-lead">You have entered the Inner Academy of the Ternary Alchemical Order as ' +
-                '<strong style="color:' + tierCfg.color + '">' + tierCfg.label + '</strong>.' +
+                '<strong class="tier-label tier-' + tier + '">' + tierCfg.label + '</strong>.' +
                 (isPaid ? ' The full curriculum is open to you.' : ' The Great Work awaits.') + '</p>' +
                 (tier === 'scholar'
-                    ? '<div class="upgrade-notice" style="border-color:rgba(0,209,255,0.2);background:rgba(0,209,255,0.03)"><p>Your generous patronage sustains the Temple and its Work. We are sincerely grateful.</p></div>'
+                    ? '<div class="upgrade-notice scholar-notice"><p>Your generous patronage sustains the Temple and its Work. We are sincerely grateful.</p></div>'
                     : '') +
                 (!isPaid
                     ? '<div class="upgrade-notice"><p>Enroll as a paying member to unlock the full curriculum — lesson modules, laboratory guides, and community access. Every tier receives the same complete curriculum.</p>' +
                       '<a href="https://www.patreon.com/Astrust" class="btn btn-gold" target="_blank" rel="noopener">Enroll on Patreon</a></div>'
                     : '') +
                 '</div>';
+        },
+
+        notes: function() {
+            requestAnimationFrame(function() {
+                document.getElementById('new-note-btn').addEventListener('click', function() {
+                    renderNoteEditor(null);
+                });
+                loadNotesList();
+            });
+            return '<div class="panel fade-in">' +
+                '<div class="panel-eyebrow">Personal</div>' +
+                '<div class="panel-header-row"><h1 class="panel-title">My Notes</h1>' +
+                '<button class="btn btn-gold" id="new-note-btn">+ New Note</button></div>' +
+                '<p class="panel-lead">Private notes only you can see — freeform, or attached to what you\'re studying.</p>' +
+                '<div id="notes-wrap"><div class="loading">Loading…</div></div></div>';
         },
 
         articles: contentPanel(
@@ -431,22 +687,21 @@ async function init() {
                 '<h1 class="panel-title">Enroll &amp; Advance</h1>' +
                 '<p class="panel-lead">Every enrolled member receives the same full curriculum. Choose the level that reflects your commitment to the Work.</p>' +
                 '<div class="upgrade-grid">' +
-                tierCard('Zelator', '$5', '/mo', '#8a9e6b', null,
+                tierCard('Zelator', '$5', '/mo', 'zelator', null,
                     ['Full lesson module curriculum', 'Laboratory guide bulletins', 'Discord &amp; Stoat community'], 'gold') +
-                tierCard('Initiate', '$10', '/mo', null, null,
+                tierCard('Initiate', '$10', '/mo', 'initiate', null,
                     ['Everything in Zelator', 'Deeper support for the Order'], 'gold') +
-                tierCard('Adept', '$15', '/mo', null, null,
+                tierCard('Adept', '$15', '/mo', 'adept', null,
                     ['Everything in Initiate', 'Sustained patronage of the Work'], 'gold') +
-                tierCard('Scholar', '$33', '/mo', 'var(--cyan)',
-                    'border-color:rgba(0,209,255,0.2);background:rgba(0,209,255,0.02)',
+                tierCard('Scholar', '$33', '/mo', 'scholar', 'scholar',
                     ['Everything in Adept', 'Principal patron of the Temple'], 'cyan') +
                 '</div></div>';
         },
     };
 
-    function tierCard(name, price, period, color, style, perks, btnClass) {
-        return '<div class="upgrade-card"' + (style ? ' style="' + style + '"' : '') + '>' +
-            '<div class="upgrade-tier"' + (color ? ' style="color:' + color + '"' : '') + '>' + name + '</div>' +
+    function tierCard(name, price, period, tier, cardClass, perks, btnClass) {
+        return '<div class="upgrade-card' + (cardClass ? ' ' + cardClass : '') + '">' +
+            '<div class="upgrade-tier tier-' + tier + '">' + name + '</div>' +
             '<div class="upgrade-price">' + price + ' <span>' + period + '</span></div>' +
             '<ul class="upgrade-perks">' + perks.map(function(p) { return '<li>' + p + '</li>'; }).join('') + '</ul>' +
             '<a href="https://www.patreon.com/Astrust" class="btn btn-' + btnClass + '" target="_blank" rel="noopener">Enroll as ' + name + '</a>' +

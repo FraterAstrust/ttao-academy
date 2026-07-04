@@ -26,6 +26,58 @@ CREATE INDEX IF NOT EXISTS idx_users_username  ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email     ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_patreon   ON users(patreon_id);
 
+-- ── NOTES — personal, private note-taking ─────────────────────────────────────
+-- Either freeform (content_id/content_type NULL) or attached to a specific
+-- article/lesson/lab. content_title is a snapshot taken at creation time so
+-- the "My Notes" notebook view doesn't need to re-join against KV content.
+-- Notes are never visible to anyone but the owning user — not even admins.
+
+CREATE TABLE IF NOT EXISTS notes (
+    id            TEXT PRIMARY KEY,
+    user_id       TEXT NOT NULL,
+    content_id    TEXT,
+    content_type  TEXT,
+    content_title TEXT,
+    title         TEXT,
+    body          TEXT NOT NULL,
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_notes_user         ON notes(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notes_user_content ON notes(user_id, content_id);
+
+-- ── COMMENTS — public discussion + private feedback ───────────────────────────
+-- kind = 'public'  → visible to any student viewing that content_id.
+-- kind = 'private' → a one-on-one thread between a single student
+--                     (thread_user_id) and admins. Admin replies are inserted
+--                     with is_admin_reply = 1 and the same thread_user_id so
+--                     the thread stays scoped to that student even though the
+--                     admin's own id isn't a row in `users`.
+-- hidden           → admin-moderated soft-hide (stays in DB, drops from view).
+-- deleted_at       → set when a student deletes their own comment.
+
+CREATE TABLE IF NOT EXISTS comments (
+    id             TEXT PRIMARY KEY,
+    content_id     TEXT NOT NULL,
+    content_type   TEXT NOT NULL DEFAULT 'articles',
+    kind           TEXT NOT NULL DEFAULT 'public',   -- 'public' | 'private'
+    thread_user_id TEXT NOT NULL,
+    author_id      TEXT NOT NULL,                    -- student user id, or admin patreon id
+    author_name    TEXT NOT NULL,
+    is_admin_reply INTEGER NOT NULL DEFAULT 0,
+    parent_id      TEXT,
+    body           TEXT NOT NULL,
+    created_at     TEXT NOT NULL,
+    updated_at     TEXT NOT NULL,
+    deleted_at     TEXT,
+    hidden         INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_comments_public  ON comments(content_id, kind, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_comments_private ON comments(content_id, thread_user_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_comments_author  ON comments(author_id, created_at DESC);
+
 -- ── BBS — PHASE 2 (schema created now, populated later) ──────────────────────
 
 CREATE TABLE IF NOT EXISTS boards (

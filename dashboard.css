@@ -85,6 +85,12 @@ body {
     text-transform: uppercase;
 }
 
+.tier-tyro { color: var(--text-dim); }
+.tier-zelator { color: #8a9e6b; }
+.tier-initiate { color: var(--gold-dim); }
+.tier-adept { color: var(--text-bright); }
+.tier-scholar { color: var(--cyan); }
+
 .sidebar-nav {
     list-style: none;
     padding: 0.6rem 0;
@@ -406,8 +412,23 @@ body {
     font-size: 0.65rem;
     letter-spacing: 3px;
     text-transform: uppercase;
-    color: var(--gold-dim);
     margin-bottom: 0.4rem;
+}
+
+.upgrade-tier.tier-tyro { color: var(--text-dim); }
+.upgrade-tier.tier-zelator { color: #8a9e6b; }
+.upgrade-tier.tier-initiate { color: var(--gold-dim); }
+.upgrade-tier.tier-adept { color: var(--text-bright); }
+.upgrade-tier.tier-scholar { color: var(--cyan); }
+
+.upgrade-card.scholar {
+    border-color: rgba(0,209,255,0.2);
+    background: rgba(0,209,255,0.02);
+}
+
+.upgrade-notice.scholar-notice {
+    border-color: rgba(0,209,255,0.2);
+    background: rgba(0,209,255,0.03);
 }
 
 .upgrade-price {
@@ -599,7 +620,11 @@ body {
 }
 .seal-sigil { color: var(--gold); opacity: 0.7; }
 .seal-name  { color: var(--text-bright); }
-.seal-tier  { } /* color set inline from tier config */
+.seal-tier.tier-tyro { color: var(--text-dim); }
+.seal-tier.tier-zelator { color: #8a9e6b; }
+.seal-tier.tier-initiate { color: var(--gold-dim); }
+.seal-tier.tier-adept { color: var(--text-bright); }
+.seal-tier.tier-scholar { color: var(--cyan); }
 .seal-hash  { font-family: 'Courier New', monospace; font-size: 0.58rem; color: var(--text-dim); letter-spacing: 1px; }
 .seal-dot   { color: var(--border); opacity: 0.8; }
 
@@ -621,4 +646,210 @@ body {
     .upgrade-grid { flex-direction: column; }
     .upgrade-card { max-width: 100%; }
     .article-body { max-width: 100%; }
+}
+
+/* ── DASHBOARD ADDITIONS — Notes & Comments ─── */
+
+/* ── SHARED SECTION HEADER ── */
+.note-section-header {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 0.7rem;
+}
+
+/* ── NOTES GRID (My Notes panel) ── */
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.note-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.1rem 1.2rem;
+}
+
+.note-attached {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--cyan-dim);
+    margin-bottom: 0.4rem;
+}
+
+.empty-state {
+    opacity: 0.5;
+    font-style: italic;
+    padding: 1rem 0;
+}
+
+.admin-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(212,175,55,0.15);
+    background: rgba(212,175,55,0.08);
+    color: var(--text);
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-left: 0.5rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+}
+
+.field-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+}
+
+.field-input,
+.md-input {
+    width: 100%;
+    min-height: 70px;
+    padding: 0.9rem 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg3);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.field-input:focus,
+.md-input:focus {
+    outline: none;
+    border-color: var(--gold-dim);
+}
+
+.md-input.min-height-100 { min-height: 100px; }
+.md-input.min-height-260 { min-height: 260px; }
+
+.editor-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+}
+
+.editor-actions--large { margin-top: 1rem; }
+
+.gate-hint {
+    font-size: 0.9rem;
+    opacity: 0.75;
+    margin-bottom: 0.8rem;
+}
+
+.watermark-hidden {
+    position: absolute;
+    opacity: 0;
+    font-size: 0;
+    user-select: none;
+}
+
+.note-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+}
+
+.note-body {
+    font-size: 0.92rem;
+    opacity: 0.85;
+    line-height: 1.6;
+    margin-bottom: 0.8rem;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.note-meta {
+    font-size: 0.75rem;
+    opacity: 0.45;
+    margin-bottom: 0.6rem;
+}
+
+.note-actions { display: flex; gap: 0.5rem; }
+
+/* ── INLINE NOTE ON AN ARTICLE VIEW ── */
+.note-panel {
+    max-width: 680px;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-light);
+}
+
+/* ── COMMENTS ── */
+.comments-panel {
+    max-width: 680px;
+    margin-top: 1.5rem;
+}
+
+.comments-section {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-light);
+    margin-bottom: 1.5rem;
+}
+
+.comment-item {
+    background: var(--bg2);
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 0.7rem;
+}
+
+.comment-item.comment-admin {
+    border-color: rgba(0,209,255,0.2);
+    background: rgba(0,209,255,0.02);
+}
+
+.comment-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.comment-author {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: var(--text-bright);
+}
+
+.comment-date {
+    font-size: 0.75rem;
+    opacity: 0.4;
+    margin-left: auto;
+}
+
+.comment-body {
+    font-size: 0.92rem;
+    opacity: 0.85;
+    line-height: 1.6;
+}
+
+.comment-actions { margin-top: 0.5rem; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+    .notes-grid { grid-template-columns: 1fr; }
+    .note-panel, .comments-panel { max-width: 100%; }
 }

@@ -50,6 +50,10 @@ async function api(path, options) {
     return res.json();
 }
 
+function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 // ── NAV ───────────────────────────────────────────────────────────────────────
 
 function setActiveNav(id) {
@@ -62,6 +66,7 @@ function showPanel(id) {
     setActiveNav(id);
     if (CONTENT_TYPES[id])       renderContentList(id);
     else if (id === 'students')  renderStudents();
+    else if (id === 'comments')  renderComments();
     else if (id === 'preview')   renderPreview();
     else if (id === 'backup')    renderBackup();
     if (window.innerWidth <= 768) closeSidebar();
@@ -333,6 +338,103 @@ async function renderStudents() {
     } catch (e) {
         var wrap2 = document.getElementById('students-wrap');
         if (wrap2) wrap2.innerHTML = '<p class="error-state">Failed to load students: ' + e.message + '</p>';
+    }
+}
+
+// ── COMMENTS MODERATION ────────────────────────────────────────────────────────
+
+function renderComments() {
+    var el = document.getElementById('dash-content');
+    el.innerHTML =
+        '<div class="panel fade-in">' +
+        '<div class="panel-eyebrow">Moderation</div>' +
+        '<h1 class="panel-title">Comments &amp; Feedback</h1>' +
+        '<p class="panel-lead" style="margin-bottom:1.2rem">Public discussion and private student feedback, across all content.</p>' +
+        '<div style="display:flex;gap:0.6rem;margin-bottom:1.2rem" id="comments-filters">' +
+        '<button class="btn btn-outline comments-filter active" data-kind="">All</button>' +
+        '<button class="btn btn-outline comments-filter" data-kind="public">Public</button>' +
+        '<button class="btn btn-outline comments-filter" data-kind="private">Private Feedback</button>' +
+        '</div>' +
+        '<div id="comments-wrap"><div class="loading">Loading…</div></div></div>';
+
+    document.getElementById('comments-filters').querySelectorAll('.comments-filter').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.comments-filter').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            loadCommentsList(btn.dataset.kind);
+        });
+    });
+
+    loadCommentsList('');
+}
+
+async function loadCommentsList(kind) {
+    var wrap = document.getElementById('comments-wrap');
+    wrap.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+        var items = await api('/api/admin/comments' + (kind ? '?kind=' + kind : ''));
+        if (!items) return;
+        if (!items.length) { wrap.innerHTML = '<p class="empty-state">Nothing here yet.</p>'; return; }
+
+        wrap.innerHTML = items.map(function(c) {
+            var kindPill = '<span class="tier-pill ' + (c.kind === 'private' ? 'tier-scholar' : 'tier-tyro') + '">' + c.kind + '</span>';
+            var adminTag = c.isAdminReply ? '<span class="admin-badge">Admin</span>' : '';
+            var hiddenTag = c.hidden ? '<span class="status-pill draft">Hidden</span>' : '';
+            return '<div class="comment-mod-row" data-id="' + c.id + '" data-thread-user="' + c.threadUserId +
+                '" data-content-id="' + c.contentId + '" data-content-type="' + c.contentType + '">' +
+                '<div class="comment-mod-meta">' + kindPill + adminTag +
+                '<span class="td-email">' + escapeHtml(c.authorName) + '</span>' +
+                '<span class="td-date">' + new Date(c.createdAt).toLocaleString() + '</span>' +
+                hiddenTag + '</div>' +
+                '<div class="comment-mod-body">' + escapeHtml(c.body) + '</div>' +
+                '<div class="comment-mod-actions">' +
+                '<button class="action-btn" data-action="toggle-hide">' + (c.hidden ? 'Unhide' : 'Hide') + '</button>' +
+                '<button class="action-btn danger" data-action="delete">Delete</button>' +
+                (c.kind === 'private' ? '<button class="action-btn" data-action="reply">Reply</button>' : '') +
+                '</div><div class="comment-mod-reply hidden"></div></div>';
+        }).join('');
+
+        wrap.addEventListener('click', async function(e) {
+            var row = e.target.closest('.comment-mod-row');
+            if (!row) return;
+            var id     = row.dataset.id;
+            var action = e.target.dataset.action;
+
+            if (action === 'toggle-hide') {
+                var isHidden = e.target.textContent.trim() === 'Unhide';
+                await api('/api/admin/comments?id=' + id, { method: 'PUT', body: JSON.stringify({ hidden: !isHidden }) });
+                loadCommentsList(kind);
+            }
+            if (action === 'delete') {
+                if (!confirm('Permanently delete this comment?')) return;
+                await api('/api/admin/comments?id=' + id, { method: 'DELETE' });
+                loadCommentsList(kind);
+            }
+            if (action === 'reply') {
+                var replyBox = row.querySelector('.comment-mod-reply');
+                if (!replyBox.classList.contains('hidden')) { replyBox.classList.add('hidden'); return; }
+                replyBox.classList.remove('hidden');
+                replyBox.innerHTML =
+                    '<textarea class="md-input" style="min-height:70px;margin-top:0.6rem" placeholder="Reply as the Order…"></textarea>' +
+                    '<button class="btn btn-gold" style="margin-top:0.5rem">Send Reply</button>';
+                replyBox.querySelector('button').addEventListener('click', async function() {
+                    var text = replyBox.querySelector('textarea').value.trim();
+                    if (!text) return;
+                    await api('/api/admin/comments', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            contentId:    row.dataset.contentId,
+                            contentType:  row.dataset.contentType,
+                            threadUserId: row.dataset.threadUser,
+                            body:         text,
+                        }),
+                    });
+                    loadCommentsList(kind);
+                });
+            }
+        });
+    } catch (e) {
+        wrap.innerHTML = '<p class="error-state">Failed to load: ' + e.message + '</p>';
     }
 }
 
